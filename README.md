@@ -1,5 +1,7 @@
 # texpdf
 texをpdfにする補助スクリプト 絶対パス対応
+@texpdf -rtcq texfile
+
 
 Usage: texpdf [(-q | -i)][-rtcfpn] texfile" 1>&2
 - [-q]:quiet platex logs; platexをバッチモードで実行(ログ出力を抑制)
