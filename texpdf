@@ -1,0 +1,113 @@
+#!/bin/sh
+
+# sh エミュレーションモード
+#emulate -R sh
+
+# for mac note
+# Last update 2017.08.22 by Yukizakura
+# texをpdfにする補助スクリプト 絶対パス対応 @texpdf -rtcq texfile
+# #を消してaliasを適宜変更してください
+#alias platex='platex-utf8'
+#alias dvipdfmx='dvipdf'
+#dviopt=""
+ptexopt='-interaction=nonstopmode -halt-on-error -file-line-error-style'
+
+Usage_guid() {
+	echo "Usage error. Usage: texpdf [(-q | -i)][-rtcfpn] texfile" 1>&2
+	echo '[-q]:quiet platex logs; platexをバッチモードで実行(ログ出力を抑制)'
+	echo '[-i]:ignore platex option; platexをオプション無しで実行'
+	echo '[-r]:remove subfiles; texfileと同一ディレクトリのaux, div, log, tocを削除'
+	echo '[-t]:twice compile; platexを2回実行(参照番号\\ref等を反映)'
+	echo '[-c]:compression image; pdf内部の画像を圧縮し, ファイルサイズを縮小(表示ズレの可能性あり)'
+	echo '[-f]:force compile; 強制的にpdfを生成(platexのエラーを無視)'
+	echo '     -q オプションと併用を推奨(read image error等に対応)'
+	#echo '[-x]:xtractbb; png, jpg, pdfのBounding Box情報を生成'
+	echo '[-x]:extractbb; png, jpgのBounding Box情報を生成'
+	echo '[-d]:create presence directry; 現在のディレクトリにpdfを生成'
+	echo '[-n]:not open pdf; pdfを作成後自動で開かない'
+	exit 1
+}
+
+while getopts :qirtcfxdn OPT
+do
+	case $OPT in
+	q)	ptexopt='-interaction=batchmode -no-file-line-error-style' ;;
+	i)	ptexopt="" ;;
+	r)	FLG_R="TRUE" ;;
+	t)	FLG_T="TRUE" ;;
+	c)	FLG_C="TRUE" ;;
+	f)	FLG_F="TRUE" ;;
+	x)	FLG_X="TRUE" ;;
+	d)	FLG_D="TRUE" ;;
+	n)	FLG_N="TRUE" ;;
+	*)	Usage_guid ;;
+	esac
+done
+shift `expr $OPTIND - 1`
+
+if [ -z $1  ] ;then
+	Usage_guid
+fi
+
+#パスの検出&移動
+tex_path=$1
+if [ "${1%/*}" != "${1##*/}" ] ;then
+	#texfileが絶対パスで指定された場合
+	pre_path=`pwd`
+	cd "${1%/*}"
+	tex_path=${1##*/}
+fi
+
+#png変換
+if [ "$FLG_X" = "TRUE" ] ;then
+	echo "Create xbb file..."
+	#for xbb_catch in `find * | grep ".png\|.jpg\|.pdf"`
+	for xbb_catch in `find * | grep ".png\|.jpg"`
+	do
+		extractbb ${xbb_catch} > /dev/null 2>&1
+		echo "${xbb_catch} -> ${xbb_catch%.*}.xbb" # 名称に.がある場合に未対応
+	done
+fi
+
+cut_path=${tex_path%.tex} #get cut-extention tex_path
+
+echo "Convert \"$cut_path.tex\" to \"$cut_path.pdf\" file..."
+if platex $ptexopt $cut_path.tex ;then
+	:	#success
+elif [ "$FLG_F" = "TRUE" ] ;then
+	:	#forced
+else
+	echo "Failed texpdf (tex > dvi), if you ignore the error, try '-f' and '-q' option."
+	exit 1
+fi
+if [ "$FLG_T" = "TRUE" ] ;then
+	printf "Twice run command platex..."
+	platex $ptexopt $cut_path.tex	> /dev/null 2>&1
+	echo "succes."
+fi
+
+if [ "$FLG_C" = "TRUE" ] ;then
+	# %1は入力 %oは出力ファイル
+	if dvipdfmx -D "ps2pdf -dCompatibilityLevel=%v -sPAPERSIZE=a0 -dAutoFilterGrayImages=true -dGrayImageFilter=/DCTEncode -dEncodeGrayImages=true -dDownsampleGrayImages=true -dGrayImageDownsampleThreshold=1.5 -dGrayImageDownsampleType=/Bicubic -dGrayImageResolution=150 -dMonoImageFilter=/CCITTFaxEncode -dEncodeMonoImages=true -dDownsampleMonoImages=true -dMonoImageDownsampleThreshold=1.5 -dMonoImageDownsampleType=/Bicubic -dMonoImageResolution=300 -dAutoFilterColorImages=true -dColorImageFilter=/DCTEncode -dEncodeColorImages=true -dColorImageResolution=150 -dColorImageDownsampleThreshold=1.5 -dColorImageDownsampleType=/Bicubic %i %o" $cut_path.dvi \
+		;then
+		if [ "$FLG_N" != "TRUE" ] ;then
+			open $cut_path.pdf
+		fi
+	fi
+else
+	if dvipdfmx $cut_path.dvi ;then
+		if [ "$FLG_N" != "TRUE" ] ;then
+			open $cut_path.pdf
+		fi
+	fi
+fi
+
+if [ "$FLG_R" = "TRUE" ] ;then
+	echo Remove `ls | grep "\.aux\|\.log\|\.dvi\|\.toc"` in `pwd`
+	rm `ls | grep ".aux\|.log\|.dvi\|.toc"`
+fi
+
+#[-d] .pdf生成場所の復元
+if [ "$FLG_D" = "TRUE" ] ;then
+	mv -i $cut_path.pdf ${pre_path/cut_path.pdf}
+fi
