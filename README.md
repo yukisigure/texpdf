@@ -11,6 +11,7 @@ Usage: texpdf [(-q | -i)][-rtcfpn] texfile"
 - [-c]:compression image; pdf内部の画像を圧縮し, ファイルサイズを縮小(表示ズレの可能性あり)
 - [-f]:force compile; 強制的にpdfを生成(platexのエラーを無視) -q オプションと併用を推奨(read image error等に対応)
 - [-x]:xtractbb; png, jpg, pdfのBounding Box情報を生成
-- [-x]:extractbb; png, jpgのBounding Box情報を生成
 - [-d]:create presence directry; 現在のディレクトリにpdfを生成
 - [-n]:not open pdf; pdfを作成後自動で開かない
+
+✳︎ ファイル名にスペースが入っている場合の-rの挙動を修正しました
