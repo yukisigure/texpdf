@@ -3,7 +3,7 @@ texをpdfにする補助スクリプト 絶対パス対応
 @texpdf -rtcq texfile
 
 
-Usage: texpdf [(-q | -i)][-rtcfpn] texfile" 1>&2
+Usage: texpdf [(-q | -i)][-rtcfpn] texfile"
 - [-q]:quiet platex logs; platexをバッチモードで実行(ログ出力を抑制)
 - [-i]:ignore platex option; platexをオプション無しで実行
 - [-r]:remove subfiles; texfileと同一ディレクトリのaux, div, log, tocを削除
