@@ -15,3 +15,5 @@ Usage: texpdf [(-q | -i)][-rtcfpn] texfile"
 - [-n]:not open pdf; pdfを作成後自動で開かない
 
 ✳︎ ファイル名にスペースが入っている場合の-rの挙動を修正しました
+
+別途LaTeX環境を導入する必要があります。
